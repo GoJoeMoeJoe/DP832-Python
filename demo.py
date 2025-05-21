@@ -11,7 +11,7 @@ except Exception as e:
     print(f"Error: {e}")
     exit()
 
-PSU.set_output(1, 2.222, 1.11)
+PSU.set_output(1, 2.222, 1.11, True)
 print(PSU.measure_current(1))
 time.sleep(10) 
 PSU.toggle_output(1, False)

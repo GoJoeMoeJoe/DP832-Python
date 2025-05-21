@@ -4,7 +4,6 @@ import time
 
 _delay = 0.01  # in seconds
 
-
 class DP832:
     def __init__(self, usb_or_serial:str='USB0'):
         try:
@@ -34,10 +33,10 @@ class DP832:
     def __del__(self):
         self.rm.close()
 
-    def set_output(self, chan, voltage, amp):
+    def set_output(self, chan, voltage, amp, isActive:bool):
         self.set_voltage(chan,voltage)
         self.set_current(chan, amp)
-        self.toggle_output(chan, True)
+        self.toggle_output(chan, isActive)
 
     def run_cmd(self, cmd):
         #TODO: Log here
@@ -71,12 +70,11 @@ class DP832:
         self.select_output(chan)
         command = ':VOLT:PROT %s' % val
         self.run_cmd(command)
-        command = ':VOLT:PROT:STAT %s' % state
-        self.run_cmd(command)
+        self.toggle_ovp(state)
 
     def toggle_ovp(self, state):
         # define a TOGGLE VOLTAGE PROTECTION function
-        command = ':VOLT:PROT:STAT %s' % state
+        command = ':VOLT:PROT:STAT %s' % ('ON' if state else 'OFF')
         self.run_cmd(command)
 
     def set_ocp(self, chan, val, state:bool):
@@ -85,8 +83,7 @@ class DP832:
         command = ':CURR:PROT %s' % val
         self.run_cmd(command)
         # Toggle the ocp
-        command = ':CURR:PROT:STAT %s' % ('ON' if state else 'OFF')
-        self.run_cmd(command)
+        self.toggle_ocp(state)
 
     def toggle_ocp(self, state:bool):
         # define a TOGGLE CURRENT PROTECTION function
