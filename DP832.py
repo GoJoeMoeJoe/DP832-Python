@@ -1,15 +1,5 @@
-#!/usr/bin/env python
-
-# Author: Kearney Lackas
-# References
-#  - http://www.batronix.com/pdf/Rigol/ProgrammingGuide/DP800_ProgrammingGuide_EN.pdf
-#  - https://github.com/freq0ut/Python-PyVisa
-#  - http://juluribk.com/2015/05/08/controlling-rigol-dp832-with-python/
-# Instructions
-# - Download and install National Instruments VISA software (https://www.ni.com/visa/)
-# - Download and install PyVISA (eg. "pip install -U pyvisa" from command line)
-
-from visa import *
+# Based on work by: Kearney Lackas
+import pyvisa
 import time
 
 _delay = 0.01  # in seconds
@@ -18,7 +8,7 @@ _delay = 0.01  # in seconds
 class DP832:
     def __init__(self, usb_or_serial='USB0'):
         try:
-            self.rm = ResourceManager()
+            self.rm = pyvisa.ResourceManager('@py')
             self.instrument_list = self.rm.list_resources()
 
             self.address = [elem for elem in self.instrument_list if (elem.find('USB') != -1 and elem.find(
@@ -34,69 +24,71 @@ class DP832:
                 self.status = "Connected"
                 self.connected_with = 'USB'
 
-        except VisaIOError:
+        except:
             self.status = "Not Connected"
             # print("PyVISA is not able to find any devices")
 
+    def __del__(self):
+        self.rm.close()
+
+    def set_output(self, chan, voltage, amp):
+        self.set_voltage(chan,voltage)
+        self.set_current(chan, amp)
+        self.toggle_output(chan, True)
+
+    def run_cmd(self, cmd):
+        #TODO: Log here
+        #logging.info(cmd)
+        self.device.write(cmd)
+        time.sleep(_delay) 
+
     def select_output(self, chan):
         # define a CHANNEL SELECT function
-        command = ':INST:NSEL %s' % chan
-        self.device.write(command)
-        time.sleep(_delay)
+        self.run_cmd(':INST:NSEL %s' % chan)
 
-    def toggle_output(self, chan, state):
+    def toggle_output(self, chan, state:bool):
         # define a TOGGLE OUTPUT function
-        command = ':OUTP CH%s,%s' % (chan, state)
-        self.device.write(command)
-        time.sleep(_delay)
+        command = ':OUTP CH%s,%s ' % (chan, 'ON' if state else 'OFF')
+        self.run_cmd(command)
 
     def set_voltage(self, chan, val):
         # define a SET VOLTAGE function
-        command = ':INST:NSEL %s' % chan
-        self.device.write(command)
-        time.sleep(_delay)
+        self.select_output(chan)
         command = ':VOLT %s' % val
-        self.device.write(command)
-        time.sleep(_delay)
+        self.run_cmd(command)
 
     def set_current(self, chan, val):
         # define a SET CURRENT function
-        command = ':INST:NSEL %s' % chan
-        self.device.write(command)
-        time.sleep(_delay)
+        self.select_output(chan)
         command = ':CURR %s' % val
-        self.device.write(command)
-        time.sleep(_delay)
+        self.run_cmd(command)
 
-    def set_ovp(self, chan, val):
+    def set_ovp(self, chan,val, state:bool):
         # define a SET VOLT PROTECTION function
-        command = ':INST:NSEL %s' % chan
-        self.device.write(command)
-        time.sleep(_delay)
+        self.select_output(chan)
         command = ':VOLT:PROT %s' % val
-        self.device.write(command)
-        time.sleep(_delay)
+        self.run_cmd(command)
+        command = ':VOLT:PROT:STAT %s' % state
+        self.run_cmd(command)
 
     def toggle_ovp(self, state):
         # define a TOGGLE VOLTAGE PROTECTION function
         command = ':VOLT:PROT:STAT %s' % state
-        self.device.write(command)
-        time.sleep(_delay)
+        self.run_cmd(command)
 
-    def set_ocp(self, chan, val):
+    def set_ocp(self, chan, val, state:bool):
         # define a SET CURRENT PROTECTION function
-        command = ':INST:NSEL %s' % chan
-        self.device.write(command)
-        time.sleep(_delay)
+        self.select_output(chan)
         command = ':CURR:PROT %s' % val
-        self.device.write(command)
-        time.sleep(_delay)
+        self.run_cmd(command)
+        # Toggle the ocp
+        command = ':CURR:PROT:STAT %s' % ('ON' if state else 'OFF')
+        self.run_cmd(command)
 
-    def toggle_ocp(self, state):
+    def toggle_ocp(self, state:bool):
         # define a TOGGLE CURRENT PROTECTION function
-        command = ':CURR:PROT:STAT %s' % state
-        self.device.write(command)
-        time.sleep(_delay)
+        command = ':CURR:PROT:STAT %s' % ('ON' if state else 'OFF')
+        self.run_cmd(command)
 
     def measure_voltage(self, chan):
         # define a MEASURE VOLTAGE function
