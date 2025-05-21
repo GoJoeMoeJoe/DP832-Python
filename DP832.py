@@ -6,23 +6,26 @@ _delay = 0.01  # in seconds
 
 
 class DP832:
-    def __init__(self, usb_or_serial='USB0'):
+    def __init__(self, usb_or_serial:str='USB0'):
         try:
             self.rm = pyvisa.ResourceManager('@py')
-            self.instrument_list = self.rm.list_resources()
-
-            self.address = [elem for elem in self.instrument_list if (elem.find('USB') != -1 and elem.find(
-                usb_or_serial) != -1)]  # Search a instrument with USB and serial number in the instrument list
+            if(len(usb_or_serial)>30):
+                self.address=[usb_or_serial]
+            else:
+                self.instrument_list = self.rm.list_resources()
+                #Let's go searching
+                self.address = [elem for elem in self.instrument_list if (elem.find('USB') != -1 and elem.find(
+                    usb_or_serial) != -1)]  # Search a instrument with USB and serial number in the instrument list
 
             if self.address.__len__() == 0:
-                self.status = "Not Connected"
-                # print("Could not connect to device")
+               self.status = "Not Connected"
+               # print("Could not connect to device")
             else:
-                self.address = self.address[0]
-                self.device = self.rm.open_resource(self.address)
-                # print("Connected to " + self.address)
-                self.status = "Connected"
-                self.connected_with = 'USB'
+               self.address = self.address[0]
+               self.device = self.rm.open_resource(self.address)
+               # print("Connected to " + self.address)
+               self.status = "Connected"
+               self.connected_with = 'USB'
 
         except:
             self.status = "Not Connected"

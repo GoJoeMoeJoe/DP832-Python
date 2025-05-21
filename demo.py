@@ -3,6 +3,8 @@ from DP832 import *
 
 try:
     PSU = DP832()
+    #OR if you know your address you can advoid some warnings
+    #PSU = DP832('USB0::0000::0000::XXXXXXXXXXXXXX::0::INSTR')
     print(PSU.status)
 
 except Exception as e:
